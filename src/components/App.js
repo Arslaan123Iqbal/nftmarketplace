@@ -3,6 +3,7 @@ import logo from '../logo.png';
 import './App.css';
 import Web3 from 'web3'
 import Marketplace from '../abis/Marketplace.json'
+import Main from './Main';
 
 class App extends Component {
 
@@ -34,8 +35,20 @@ class App extends Component {
     const networkData  = Marketplace.networks[networkId];
     if(networkData){
       const marketplace = web3.eth.Contract(abi, networkData.address);
+      const productCount = await marketplace.methods.productCount().call()
+      this.setState({productCount});
+      for(var i =1 ; i<= productCount; i++)
+      {
+        const product = await marketplace.methods.products(i).call();
+        this.setState({
+          products: [...this.state.products, product]
+        })
+
+       
+      }
       this.setState({marketplace})
       this.setState({loading:false})
+       
     }
     else{
  window.alert("Not deployed on network")
@@ -51,55 +64,30 @@ class App extends Component {
       products : [],
       loading: true
     }
+
+    this.createProduct = this.createProduct.bind(this);
+  }
+  createProduct(name,price){
+  
+    this.setState({loading: true});
+    this.state.marketplace.methods.createProduct(name, price).send({from: this.state.account}).once('reciept', (reciept) =>{
+      this.setState({loading: false })
+    })
   }
   render() {
     return (
       <div>
-        {this.state.account}
         <div>
-          <div>{this.state.loading ?  "loading ....." : "AddProduct"}</div>
+          {
+            this.state.account
+          }
         </div>
-        <form>
-          <input placeholder='product name' />
-          <input placeholder='price'/>
-          <button>Submit</button>
-        </form>
-
-        <table class="table">
-  <thead class="thead-dark">
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">Name</th>
-      <th scope="col">Price</th>
-      <th scope="col">Owner</th>
-      <th scope="col">Action</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row">1</th>
-      <td>Mark</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-      <button>Buy</button>
-    </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>Jacob</td>
-      <td>Thornton</td>
-      <td>@fat</td>
-    </tr>
-    <tr>
-      <th scope="row">3</th>
-      <td>Larry</td>
-      <td>the Bird</td>
-      <td>@twitter</td>
-    </tr>
-  </tbody>
-</table>
-
-
+        {
+          this.state.loading ? "Loading " : <Main products={this.state.products} createProduct={this.createProduct}/>
+        }
       </div>
+      
+      
     );
   }
 }
